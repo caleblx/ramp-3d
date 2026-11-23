@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RAMP-3D: Grounding Vision and Language to 3D Masks for Long-Horizon Box Rearrangement</title>
+  <meta name="description" content="RAMP-3D formulates long-horizon 3D rearrangement planning as sequential reactive prediction of paired 3D masks: which object to pick and which region to place it in.">
+  <meta property="og:title" content="RAMP-3D: Grounding Vision and Language to 3D Masks for Long-Horizon Box Rearrangement">
+  <meta property="og:description" content="A reactive 3D mask planner for language-conditioned, long-horizon box rearrangement from multi-view RGB-D.">
+  <meta property="og:image" content="static/images/og_image.jpg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="static/images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="static/css/style.css?v=25">
+</head>
+<body>
+
+<header class="hero">
+  <div class="container">
+    <h1 class="title"><span class="brand">RAMP-3D</span>Grounding Vision and Language to 3D Masks for Long-Horizon Box Rearrangement</h1>
+
+    <ul class="authors">
+      <li><a href="https://scholar.google.com/citations?user=q7gz_SgAAAAJ">Ashish Malik</a></li>
+      <li><a href="https://scholar.google.com/scholar?q=Caleb+Lowe+Oregon+State">Caleb Lowe</a></li>
+      <li><a href="https://idigitopia.github.io/">Aayam Shrestha</a></li>
+      <li><a href="https://web.engr.oregonstate.edu/~leestef/">Stefan Lee</a></li>
+      <li><a href="https://web.engr.oregonstate.edu/~lif/">Fuxin Li</a></li>
+      <li><a href="https://web.engr.oregonstate.edu/~afern/">Alan Fern</a></li>
+    </ul>
+    <p class="affil">School of Electrical Engineering and Computer Science, Oregon State University</p>
+    <p class="venue">ICAPS 2026</p>
+
+    <nav class="links" aria-label="Paper resources">
+      <a class="btn" href="https://arxiv.org/abs/2603.23676">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6M9 13h8M9 17h8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+        Paper
+      </a>
+      <a class="btn" href="https://arxiv.org/pdf/2603.23676">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        PDF
+      </a>
+      <a class="btn" href="#bibtex">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6 3 12l5 6M16 6l5 6-5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        BibTeX
+      </a>
+      <span class="btn btn-disabled" title="Code release coming soon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.4 1.1 2.9.8.1-.6.4-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z" fill="currentColor"/></svg>
+        Code (soon)
+      </span>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- Teaser -->
+  <section class="section teaser">
+    <div class="container wide">
+      <div class="player" id="teaser-player">
+        <figure class="video-frame teaser-frame">
+          <video id="teaser-video" autoplay muted playsinline preload="auto" poster="static/videos/demo_1.jpg" src="static/videos/demo_1.mp4"></video>
+          <p class="hud-goal"><b>Goal</b><span id="teaser-goal"></span></p>
+          <span class="hud-step" id="teaser-step" aria-hidden="true"></span>
+          <div class="player-bar" role="group" aria-label="Teaser playback controls">
+            <button type="button" class="pbtn" id="tp-prev" aria-label="Previous step" title="Previous step (&larr;)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14M18 6l-8 6 8 6z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </button>
+            <button type="button" class="pbtn pbtn-main" id="tp-play" aria-label="Pause" title="Play / pause (space)">
+              <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>
+              <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            </button>
+            <button type="button" class="pbtn" id="tp-next" aria-label="Next step" title="Next step (&rarr;)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 5v14M6 6l8 6-8 6z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="scrub">
+              <div class="scrub-track"><div class="scrub-fill" id="tp-fill"></div></div>
+              <input type="range" id="tp-seek" min="0" max="1000" step="1" value="0" aria-label="Seek">
+            </div>
+            <span class="ptime" id="tp-time">0:00</span>
+            <button type="button" class="pbtn pbtn-text" id="tp-speed" aria-label="Playback speed" title="Playback speed">1&times;</button>
+          </div>
+        </figure>
+        <div class="demo-tabs" id="tp-tabs" role="tablist" aria-label="Demo tasks"></div>
+      </div>
+      <p class="lede">
+        Given multi-view RGB-D observations of a warehouse and an under-specified natural-language goal,
+        <strong>RAMP-3D</strong> predicts two 3D masks at each step, one for the box to pick up and one for the region to
+        place it in, and repeats until the task is complete.
+      </p>
+    </div>
+  </section>
+
+  <!-- Abstract -->
+  <section class="section" id="abstract">
+    <div class="container narrow">
+      <h2>Abstract</h2>
+      <p class="abstract">
+        We study long-horizon planning in 3D environments from under-specified natural-language goals using only visual observations, focusing on multi-step 3D box rearrangement tasks. Existing approaches typically rely on symbolic planners with brittle relational grounding of states and goals, or on direct action-sequence generation from 2D vision-language models (VLMs). Both approaches struggle with reasoning over many objects, rich 3D geometry, and implicit semantic constraints. Recent advances in 3D VLMs demonstrate strong grounding of natural-language referents to 3D segmentation masks, suggesting the potential for more general planning capabilities. We extend existing 3D grounding models and propose Reactive Action Mask Planner (RAMP-3D), which formulates long-horizon planning as sequential reactive prediction of paired 3D masks: a &ldquo;which-object&rdquo; mask indicating what to pick and a &ldquo;which-target-region&rdquo; mask specifying where to place it. The resulting system processes RGB-D observations and natural-language task specifications to reactively generate multi-step pick-and-place actions for 3D box rearrangement. We conduct experiments across 11 task variants in warehouse-style environments with 1&ndash;30 boxes and diverse natural-language constraints. RAMP-3D achieves 79.5% success rate on long-horizon rearrangement tasks and significantly outperforms 2D VLM-based baselines, establishing mask-based reactive policies as a promising alternative to symbolic pipelines for long-horizon planning.
+      </p>
+    </div>
+  </section>
+
+  <!-- Key numbers -->
+  <section class="section stats-band" aria-label="Key results">
+    <div class="container">
+      <dl class="stats">
+        <div><dt>79.5%</dt><dd>long-horizon plan success<br><span>snap-to-target, 1&ndash;30 boxes</span></dd></div>
+        <div><dt>96.8%</dt><dd>one-step plan validity<br><span>vs. 41.4% for a 2D VLM baseline</span></dd></div>
+        <div><dt>11</dt><dd>language-specified task variants<br><span>with ordering &amp; placement constraints</span></dd></div>
+        <div><dt>1&ndash;30</dt><dd>boxes per scene<br><span>with pallets, shelves &amp; distractors</span></dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- Rollouts -->
+  <section class="section" id="rollouts">
+    <div class="container wide">
+      <h2>Example Tasks</h2>
+      <p class="section-intro narrow">
+        Each task is a natural-language goal in a randomly generated warehouse scene with red, blue and yellow boxes,
+        pallets, two-layer shelves and distractor objects. Goals constrain both the final arrangement and the
+        <em>order</em> in which boxes are placed. The videos show complete solutions from the oracle planner that
+        generates our training data, not RAMP-3D predictions.</p>
+      <p class="legend" aria-label="Overlay legend">
+        <span><i class="dot pick"></i>pickup box</span>
+        <span><i class="dot place"></i>putdown target</span>
+      </p>
+      <div class="video-grid" id="rollout-grid">
+        <!-- populated from static/js/main.js (ROLLOUTS) -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Method -->
+  <section class="section alt" id="method">
+    <div class="container wide">
+      <h2>Method</h2>
+      <h3 class="method-sub">Overview</h3>
+      <p class="method-text">
+        RAMP-3D extends UniVLG, a model that grounds referring expressions to 3D segmentation masks, to sequential
+        planning. At each step it takes multi-view RGB-D observations and the language goal, and predicts a pickup mask
+        and a putdown mask over the reconstructed point cloud. The animation below walks through one such step.
+      </p>
+      <figure class="mx" id="method-anim" aria-label="Animation of one RAMP-3D planning step">
+        <div class="mx-stage">
+          <img class="mx-poster" src="static/method/poster.jpg" alt="Point cloud of the warehouse scene with the selected pickup box (blue) and putdown cell (green) connected by an arc." loading="lazy">
+          <canvas></canvas>
+          <div class="mx-labels" aria-hidden="true"></div>
+          <div class="mx-view" aria-hidden="true">
+            <div class="mx-view-img"><i class="c"></i><i class="d"></i></div>
+            <span class="mx-view-tag"><span></span><b>Color</b></span>
+            <span class="mx-view-scale"><small>near</small><em></em><small>far</small></span>
+          </div>
+          <div class="mx-caption">
+            <span class="mx-kicker"></span>
+            <div><b class="mx-title"></b><p class="mx-text"></p></div>
+          </div>
+          <div class="mx-legend" aria-hidden="true"><b>p(pickup)</b><span class="mx-ramp"></span><small>0</small><small>1</small></div>
+          <p class="mx-goal"><b>Goal</b><span></span></p>
+          <button type="button" class="mx-play" aria-label="Pause">
+            <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>
+            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="mx-chapters" role="group" aria-label="Animation steps"></div>
+        <figcaption>
+          Rendered from a 30-view capture of a benchmark scene. The highlighted box and cell are the ground-truth action for
+          this step. The probability values are illustrative, not model outputs.
+        </figcaption>
+      </figure>
+
+      <h3 class="method-sub">Architecture</h3>
+      <p class="method-text">
+        RAMP-3D builds on UniVLG. Each RGB-D view is passed through a Swin Transformer backbone, and the resulting pixel
+        features are back-projected into 3D using depth and the known camera poses. A multi-view attention module then
+        turns them into 3D visual tokens that encode both appearance and geometry. The language goal is encoded by a
+        frozen RoBERTa text encoder. A transformer decoder with learnable queries alternates self-attention between the
+        queries with cross-attention to the visual and text tokens. Each query outputs a mask over the 3D points and a
+        score for which words of the goal it refers to.
+      </p>
+      <figure class="figure">
+        <img src="static/images/architecture.webp" alt="RAMP-3D architecture: multi-view posed RGB-D is lifted to 3D visual tokens, the goal is encoded by a frozen language encoder, and a query-refinement decoder outputs pickup and putdown masks, a pickup-putdown pair selector and a done predictor." loading="lazy" width="2600" height="974">
+        <figcaption>
+          <strong>RAMP-3D architecture.</strong> The two components shown in the legend, the pickup&ndash;putdown pair selector
+          and the last-action (done) predictor, are the additions to UniVLG.
+        </figcaption>
+      </figure>
+
+      <h3 class="method-sub">Extensions to UniVLG</h3>
+      <p class="method-text">
+        RAMP-3D changes what the decoder predicts and adds two components on top of its queries.
+      </p>
+      <div class="cards three">
+        <article class="card">
+          <h3>Paired action masks</h3>
+          <p>At each step the model predicts a <em>which-object</em> mask and a <em>which-target-region</em> mask over the
+            point cloud. In simulation, each mask is mapped to the object or region it covers most, which gives a discrete
+            pick-and-place action.</p>
+        </article>
+        <article class="card">
+          <h3>Pickup&ndash;putdown pair selector</h3>
+          <p>Two linear projections give each decoder query a pickup embedding and a putdown embedding, and their dot
+            product scores a candidate pair. At inference, each of the top 5 pickup queries is scored against all putdown
+            queries, and the pair with the highest combined confidence and compatibility is selected.</p>
+        </article>
+        <article class="card">
+          <h3>Termination head</h3>
+          <p>An MLP with one hidden layer takes all decoder queries and predicts whether the current action is the last
+            one. The scene is observed again after each action, so the planner keeps no symbolic state between steps.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tasks -->
+  <section class="section" id="tasks">
+    <div class="container wide">
+      <h2>Benchmark: 11 Task Variants</h2>
+      <p class="section-intro narrow">
+        Scenes are generated in a 12&thinsp;m&nbsp;&times;&nbsp;12&thinsp;m simulated warehouse with up to 3 pallets (4 or 6 cells,
+        stackable up to 3 high), up to 2 two-layer shelves, up to 30 boxes of three colors, and up to 4 distractors.
+        An oracle planner provides ~9.5k supervised scene snapshots, each paired with paraphrased language goals.
+      </p>
+
+      <div class="goal-gallery">
+        <figure><img src="static/images/goal_1.webp" alt="Scene with boxes stacked two high" loading="lazy" width="640" height="480"><figcaption>&ldquo;Create stacks of boxes up to a maximum height of 2.&rdquo;</figcaption></figure>
+        <figure><img src="static/images/goal_2.webp" alt="Scene with boxes stacked right to left" loading="lazy" width="640" height="480"><figcaption>&ldquo;Create stacks of boxes up to height 3, stacking them from right to left.&rdquo;</figcaption></figure>
+        <figure><img src="static/images/goal_3.webp" alt="Scene with one stack completed before another" loading="lazy" width="640" height="480"><figcaption>&ldquo;Stack the boxes to a maximum height of 3, completing one stack completely before starting another one.&rdquo;</figcaption></figure>
+        <figure><img src="static/images/goal_4.webp" alt="Scene with blue boxes placed first without stacking" loading="lazy" width="640" height="480"><figcaption>&ldquo;Place all boxes on pallets and shelves without stacking, prioritizing blue boxes first.&rdquo;</figcaption></figure>
+      </div>
+
+      <div class="table-wrap narrow">
+        <table class="tasks-table">
+          <thead><tr><th>Task variant</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>Basic placement</td><td>Standard box emplacement with stack height limits.</td></tr>
+            <tr><td>Box type prioritization</td><td>Prioritize designated box types before others.</td></tr>
+            <tr><td>Shelf prioritization</td><td>Fill all shelves completely before placing boxes on pallets.</td></tr>
+            <tr><td>Pallet prioritization</td><td>Fill pallets before placing boxes on shelves.</td></tr>
+            <tr><td>Placement ordering</td><td>Follow prescribed left-to-right or right-to-left ordering.</td></tr>
+            <tr><td>Size-based prioritization</td><td>Fill pallets or shelves of specified size before others.</td></tr>
+            <tr><td>Avoid stacking</td><td>Stack boxes only when no unstacked locations remain.</td></tr>
+            <tr><td>Homogeneous stacks</td><td>Each stack must contain a single type of boxes.</td></tr>
+            <tr><td>Box-type segregation</td><td>Each pallet or shelf must contain a single type of boxes.</td></tr>
+            <tr><td>Finish stack first</td><td>Finish current stack before selecting other locations.</td></tr>
+            <tr><td>Box accessibility</td><td>Keep selected box types accessible by placing them on top of stacks or in homogeneous stacks.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section class="section alt" id="results">
+    <div class="container wide">
+      <h2>Results</h2>
+      <p class="section-intro narrow">
+        We compare against <strong>2D-pointer</strong>, a two-stage 2D VLM baseline in which GPT-5.1 describes the pickup box
+        and putdown location from five views and Molmo-72B points to them in a top-down image.
+      </p>
+
+      <div class="two-col">
+        <div class="table-block">
+          <h3>One-step plan validity <small>(snap-to-target, %&nbsp;&uarr;)</small></h3>
+          <table class="results">
+            <thead><tr><th>Num. boxes</th><th>RAMP-3D</th><th>2D-pointer</th></tr></thead>
+            <tbody>
+              <tr><td>1&ndash;10</td><td class="best">97.9</td><td>42.4</td></tr>
+              <tr><td>11&ndash;20</td><td class="best">97.1</td><td>39.2</td></tr>
+              <tr><td>21&ndash;30</td><td class="best">94.4</td><td>43.1</td></tr>
+              <tr class="agg"><td>Aggregate</td><td class="best">96.8</td><td>41.4</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-block">
+          <h3>Putdown placement error <small>(free-form, m&nbsp;&darr;)</small></h3>
+          <table class="results">
+            <thead><tr><th>Putdown target</th><th>RAMP-3D</th><th>2D-pointer</th></tr></thead>
+            <tbody>
+              <tr><td>Pallet cell</td><td>0.167 &plusmn; 0.11</td><td class="best">0.125 &plusmn; 0.06</td></tr>
+              <tr><td>Box</td><td class="best">0.124 &plusmn; 0.08</td><td>0.132 &plusmn; 0.07</td></tr>
+              <tr class="agg"><td>Aggregate</td><td>0.142 &plusmn; 0.09</td><td class="best">0.129 &plusmn; 0.07</td></tr>
+            </tbody>
+          </table>
+          <p class="note">Placement errors are similar for the two methods. 2D-pointer&rsquo;s lower one-step validity comes from target
+            selection: it produces a feasible pickup&ndash;putdown pair in only 33.9% of test samples, and matches the oracle&rsquo;s
+            pair in 2.0%.</p>
+        </div>
+      </div>
+
+      <figure class="figure">
+        <img src="static/images/plan_success.webp" alt="Bar charts of long-horizon planning success by task variant and by number of boxes, for snap-to-target and free-form placement." loading="lazy" width="2600" height="791">
+        <figcaption>
+          <strong>Long-horizon plan success.</strong> Percentage of full rollouts without any invalid action, by task variant and
+          by number of boxes. RAMP-3D attains <strong>79.5%</strong> success on average with snap-to-target execution and
+          <strong>66.5%</strong> with free-form execution.
+        </figcaption>
+      </figure>
+
+      <div class="two-col figs">
+        <figure class="figure">
+          <img src="static/images/joint_accuracy.webp" alt="Joint target identification accuracy versus number of boxes for RAMP-3D and 2D-pointer." loading="lazy" width="1600" height="1000">
+          <figcaption><strong>Joint target identification</strong> accuracy by number of boxes. RAMP-3D identifies both targets at IoU&nbsp;&ge;&nbsp;0.25 in 89% of scenes on average.</figcaption>
+        </figure>
+        <figure class="figure">
+          <img src="static/images/target_difficulty.webp" alt="Target identification difficulty for RAMP-3D by target type." loading="lazy" width="1600" height="1237">
+          <figcaption><strong>Target identification difficulty</strong> for RAMP-3D, broken down by the type of target. Empty placement cells are the hardest referents.</figcaption>
+        </figure>
+      </div>
+
+      <div class="table-block narrow">
+        <h3>Generalization &amp; ablation <small>(gap in one-step validity vs. full model, pp)</small></h3>
+        <table class="results">
+          <thead><tr><th>Experiment</th><th>1&ndash;10</th><th>11&ndash;20</th><th>21&ndash;30</th><th>Agg.</th></tr></thead>
+          <tbody>
+            <tr><td>Held-out language templates</td><td>&minus;4.3</td><td>&minus;5.6</td><td>&minus;2.3</td><td>&minus;4.4</td></tr>
+            <tr><td>Without auxiliary grounding tasks</td><td>&minus;2.4</td><td>&minus;2.1</td><td>&minus;0.8</td><td>&minus;1.9</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- BibTeX -->
+  <section class="section" id="bibtex">
+    <div class="container narrow">
+      <h2>BibTeX</h2>
+      <div class="bibtex">
+        <button class="copy" type="button" data-copy="bibtex-code">Copy</button>
+<pre><code id="bibtex-code">@inproceedings{malik2026ramp3d,
+  title     = {Grounding Vision and Language to 3D Masks for Long-Horizon Box Rearrangement},
+  author    = {Malik, Ashish and Lowe, Caleb and Shrestha, Aayam and Lee, Stefan and Li, Fuxin and Fern, Alan},
+  booktitle = {Proceedings of the International Conference on Automated Planning and Scheduling (ICAPS)},
+  year      = {2026},
+  eprint    = {2603.23676},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2603.23676}
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <p>&copy; 2026 The authors, Oregon State University.</p>
+  </div>
+</footer>
+
+<script src="static/js/main.js?v=19"></script>
+<script type="module" src="static/js/method-anim.js?v=7"></script>
+</body>
+</html>
